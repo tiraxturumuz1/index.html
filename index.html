@@ -12,8 +12,6 @@
         #status { margin-top: 20px; padding: 10px; font-size: 14px; border-radius: 5px; }
         .success { color: green; }
         .error { color: red; }
-        
-        /* استایل دکمه لاگین */
         .login-btn {
             background-color: #673ab7;
             color: white;
@@ -23,12 +21,8 @@
             border-radius: 30px;
             cursor: pointer;
             margin-top: 25px;
-            transition: background 0.3s;
-            display: none; /* در ابتدا مخفی است تا SDK لود شود */
+            display: none; 
         }
-        .login-btn:hover { background-color: #512da8; }
-        .login-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-
         #user-info { margin-top: 30px; padding: 20px; border-top: 1px solid #eee; display: none; }
         .username { font-size: 22px; font-weight: bold; color: #333; }
         .logout-btn { margin-top: 15px; background: none; border: 1px solid #ff5252; color: #ff5252; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
@@ -40,14 +34,12 @@
         <h1>Welcome to the decentralized international government.</h1>
         <p>Please log in to access the platform.</p>
 
-        <!-- دکمه لاگین -->
         <button id="login-button" class="login-btn">Login with Pi</button>
 
-        <!-- بخش نمایش اطلاعات کاربر بعد از لاگین -->
         <div id="user-info">
             <p>Welcome back,</p>
             <div class="username" id="username-display"></div>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            <button class="logout-btn" onclick="location.reload()">Logout</button>
         </div>
 
         <div id="status">Initializing SDK...</div>
@@ -60,67 +52,53 @@
         const userInfoDiv = document.getElementById('user-info');
         const usernameDisplay = document.getElementById('username-display');
 
-        // تابع مدیریت وضعیت پیام‌ها
         function updateStatus(msg, type) {
             statusDiv.textContent = msg;
             statusDiv.className = type;
         }
 
-        // تابع خروج
-        function logout() {
-            // برای ساده‌ترین حالت، صفحه را رفرش می‌کنیم تا نشست قبلی پاک شود
-            location.reload();
+        // مقداردهی اولیه
+        try {
+            Pi.init({ 
+                version: "2.0", 
+                sandbox: true, 
+                appId: "pidao-pi-2uk8" 
+            });
+            
+            updateStatus("SDK Connected!", "success");
+            loginButton.style.display = "inline-block";
+        } catch (e) {
+            updateStatus("Init Error: " + e.message, "error");
         }
 
-        async function initApp() {
-            try {
-                // ۱. مقداردهی اولیه
-                Pi.init({ 
-                    version: "2.0", 
-                    sandbox: true, 
-                    appId: "pidao-pi-2uk8" 
-                });
-
-                updateStatus("SDK Connected!", "success");
-
-                // ۲. نمایش دکمه لاگین وقتی SDK آماده شد
-                loginButton.style.display = "inline-block";
-
-                // ۳. تعریف عملیات کلیک روی دکمه
-                loginButton.onclick = async () => {
-                    try {
-                        updateStatus("Authenticating...", "");
-                        // فراخوانی متد احراز هویت
-                        const auth = await Pi.authenticate(true, (error, auth) => {
-                            if (error) {
-                                updateStatus("Auth Failed: " + error.message, "error");
-                                return;
-                            }
-                            // اگر موفقیت‌آمیز بود
-                            showUser(auth.user);
-                        });
-                    } catch (err) {
-                        updateStatus("Error during authentication: " + err.message, "error");
-                    }
-                };
-
-            } catch (e) {
-                updateStatus("Initialization Error: " + e.message, "error");
-            }
-        }
+        // مدیریت کلیک دکمه با روش Callback (برای دور زدن باگ e.every)
+        loginButton.onclick = function() {
+            updateStatus("Authenticating...", "");
+            
+            // استفاده از مدل Callback به جای Async/Await برای جلوگیری از باگ داخلی SDK
+            Pi.authenticate(true, function(err, auth) {
+                if (err) {
+                    // اگر باز هم خطا داد، متن خطا را دقیق می‌بینیم
+                    updateStatus("Auth Error: " + err.message, "error");
+                    console.error("Full error object:", err);
+                    return;
+                }
+                
+                // اگر موفقیت‌آمیز بود
+                if (auth && auth.user) {
+                    showUser(auth.user);
+                } else {
+                    updateStatus("No user data received.", "error");
+                }
+            });
+        };
 
         function showUser(user) {
-            // مخفی کردن دکمه و نمایش اطلاعات کاربر
             loginButton.style.display = "none";
             statusDiv.style.display = "none";
             userInfoDiv.style.display = "block";
-            
-            // نمایش نام کاربری (username)
             usernameDisplay.textContent = "@" + user.username;
         }
-
-        // شروع برنامه
-        initApp();
     </script>
 </body>
 </html>
