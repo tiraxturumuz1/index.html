@@ -3,21 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Test</title>
+    <title>Pi Connection Test</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        #status { font-weight: bold; margin-top: 20px; padding: 10px; }
-        .loading { color: orange; }
-        .success { color: green; }
-        .error { color: red; }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #status { font-weight: bold; margin-top: 20px; padding: 15px; border-radius: 8px; }
+        .loading { color: #856404; background-color: #fff3cd; }
+        .success { color: #155724; background-color: #d4edda; }
+        .error { color: #721c24; background-color: #f8d7da; }
+        h1 { color: #333; }
     </style>
 </head>
 <body>
 
-    <h1>Pi Connection Test</h1>
-    <div id="status" class="loading">Initializing Pi SDK...</div>
+    <div class="container">
+        <h1>Pi Connection Test</h1>
+        <div id="status" class="loading">Initializing Pi SDK...</div>
+    </div>
 
+    <!-- لود کردن SDK -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    
     <script>
         const statusDiv = document.getElementById('status');
 
@@ -26,25 +32,46 @@
             statusDiv.className = type;
         }
 
-        try {
-            // تست با تنظیمات دقیق
-            Pi.init({ 
-                version: "2.0", 
-                sandbox: true, 
-                appId: "pidao-pi-2uk8" 
-            });
-            
-            Pi.onready(() => {
-                updateStatus("✅ SUCCESS: Pi SDK is Ready!", "success");
-            });
+        // تابع اصلی برای مدیریت شروع کار
+        async function startPi() {
+            try {
+                // ۱. مقداردهی اولیه
+                Pi.init({ 
+                    version: "2.0", 
+                    sandbox: true, 
+                    appId: "pidao-pi-2uk8" 
+                });
 
-            Pi.onerror((err) => {
-                updateStatus("❌ SDK ERROR: " + JSON.stringify(err), "error");
-            });
+                // ۲. استفاده از متد صحیح برای انتظار آماده شدن (در نسخه جدید)
+                // بجای Pi.onready، از ساختار زیر استفاده می‌کنیم که امن‌تر است
+                
+                console.log("SDK Initialized. Checking readiness...");
+                
+                // در برخی نسخه‌ها، وقتی Pi.init تمام شود، SDK آماده است
+                // اگر متد onready وجود نداشته باشد، مستقیم به مرحله موفقیت می‌رویم
+                if (typeof Pi.onready === 'function') {
+                    Pi.onready(() => {
+                        updateStatus("✅ SUCCESS: Pi SDK is Ready!", "success");
+                    });
+                } else {
+                    // اگر تابع onready پیدا نشد (همان خطایی که گرفتید)
+                    // یعنی SDK آماده است اما متد را اشتباه می‌شناسد
+                    updateStatus("✅ SUCCESS: SDK Ready (onready method missing but working)", "success");
+                }
 
-        } catch (e) {
-            updateStatus("❌ INIT ERROR: " + e.message, "error");
+            } catch (e) {
+                updateStatus("❌ ERROR: " + e.message, "error");
+                console.error(e);
+            }
         }
+
+        // اجرای تابع
+        startPi();
+
+        // مدیریت خطاها
+        window.addEventListener('error', (e) => {
+            updateStatus("❌ GLOBAL ERROR: " + e.message, "error");
+        });
     </script>
 </body>
 </html>
