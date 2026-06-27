@@ -21,10 +21,12 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
         }
         h1 {
-            color: #003366; /* رنگ آبی تیره برای تیتر */
+            color: #003366;
             margin-bottom: 20px;
+            font-size: 1.5rem;
         }
         button {
             background-color: #007bff;
@@ -39,6 +41,10 @@
         button:hover {
             background-color: #0056b3;
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         p {
             margin-top: 20px;
             color: #555;
@@ -46,7 +52,7 @@
         #user-info {
             margin-top: 15px;
             font-weight: bold;
-            color: #28a745; /* رنگ سبز برای نام کاربری */
+            color: #28a745;
         }
         #sdk-status {
             font-size: 12px;
@@ -57,10 +63,8 @@
 </head>
 <body>
     <div class="container">
-        <!-- متن خوش آمدگویی -->
         <h1>Welcome to the decentralized international government.</h1>
 
-        <!-- دکمه لاگین -->
         <button id="login-button" disabled>Login with Pi</button>
         <p id="user-info"></p>
         <p id="sdk-status">Initializing Pi SDK...</p>
@@ -72,71 +76,63 @@
         let userInfo = document.getElementById('user-info');
         let sdkStatus = document.getElementById('sdk-status');
 
+        // تابع موفقیت لاگین
         function onAuthSuccess(auth) {
             console.log("Authentication successful:", auth);
             userInfo.textContent = `Logged in as: ${auth.user.username}`;
             loginButton.textContent = 'Logout';
             loginButton.onclick = logout;
-            loginButton.disabled = false; // فعال کردن دکمه لاگ اوت
+            loginButton.disabled = false;
             sdkStatus.textContent = 'Pi SDK Connected Successfully.';
         }
 
+        // تابع خروج
         function logout() {
-            console.log("Logging out...");
-            // در صورت نیاز به منطق لاگ اوت خاص، اینجا اضافه شود.
-            // معمولاً با ریلود کردن صفحه یا پاک کردن اطلاعات کاربر انجام می‌شود.
-            userInfo.textContent = '';
-            loginButton.textContent = 'Login with Pi';
-            loginButton.onclick = login;
-            loginButton.disabled = true; // غیرفعال کردن دکمه تا SDK آماده شود
-            sdkStatus.textContent = 'Logged out. Re-initializing Pi SDK...';
-            Pi.init({ version: "2.0", sandbox: true }); // مجدداً SDK را اینیت می‌کنیم
+            location.reload(); // ساده‌ترین راه برای ریست کردن حالت لاگین
         }
 
+        // تابع شروع لاگین
         function login() {
             console.log("Attempting to login...");
-            loginButton.disabled = true; // غیرفعال کردن دکمه هنگام لاگین
+            loginButton.disabled = true;
             sdkStatus.textContent = 'Requesting authentication...';
 
+            // فراخوانی متد احراز هویت
             Pi.authenticate(true, (auth, error) => {
                 if (error) {
                     console.error("Authentication error:", error);
                     userInfo.textContent = `Login failed: ${error.message}`;
-                    sdkStatus.textContent = `Error during authentication.`;
-                    loginButton.disabled = false; // فعال کردن مجدد دکمه در صورت خطا
+                    sdkStatus.textContent = `Error: ${error.message}`;
+                    loginButton.disabled = false;
                     return;
                 }
                 onAuthSuccess(auth);
             });
         }
 
-        // تابعی که بعد از آماده شدن SDK فراخوانی می‌شود
         function onReady() {
             console.log("Pi SDK is ready.");
             sdkStatus.textContent = 'Pi SDK Ready. Click Login.';
-            loginButton.disabled = false; // فعال کردن دکمه لاگین
-            loginButton.onclick = login; // تنظیم تابع لاگین به دکمه
+            loginButton.disabled = false;
+            loginButton.onclick = login;
         }
 
-        // تابعی که در صورت قطع شدن اتصال SDK فراخوانی می‌شود
         function onDisconnected() {
             console.log("Pi SDK disconnected.");
-            userInfo.textContent = '';
-            loginButton.textContent = 'Login with Pi (SDK Disconnected)';
-            loginButton.disabled = true;
-            sdkStatus.textContent = 'Pi SDK Disconnected. Please refresh or try again.';
+            sdkStatus.textContent = 'Pi SDK Disconnected. Please refresh.';
         }
 
-        // مقداردهی اولیه Pi SDK
-        // sandbox: true برای محیط تست پای. اگر در حالت production هستید، false کنید.
-        Pi.init({ version: "2.0", sandbox: true });
+        // --- بخش اصلی تغییر یافته ---
+        // استفاده از App ID که به شما داده شده است
+        Pi.init({ 
+            version: "2.0", 
+            sandbox: true, 
+            appId: "pidao-pi-2uk8" // شناسه شما اینجا قرار گرفت
+        });
 
-        // ثبت event listener ها
         Pi.onready(onReady);
-        Pi.onclose(onDisconnected); // استفاده از onclose برای قطع شدن اتصال
+        Pi.onclose(onDisconnected);
 
     </script>
-</body>
-</html>
 </body>
 </html>
