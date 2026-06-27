@@ -1,1 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Test</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        #status { font-weight: bold; margin-top: 20px; padding: 10px; }
+        .loading { color: orange; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
 
+    <h1>Pi Connection Test</h1>
+    <div id="status" class="loading">Initializing Pi SDK...</div>
+
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function updateStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.className = type;
+        }
+
+        try {
+            // تست با تنظیمات دقیق
+            Pi.init({ 
+                version: "2.0", 
+                sandbox: true, 
+                appId: "pidao-pi-2uk8" 
+            });
+            
+            Pi.onready(() => {
+                updateStatus("✅ SUCCESS: Pi SDK is Ready!", "success");
+            });
+
+            Pi.onerror((err) => {
+                updateStatus("❌ SDK ERROR: " + JSON.stringify(err), "error");
+            });
+
+        } catch (e) {
+            updateStatus("❌ INIT ERROR: " + e.message, "error");
+        }
+    </script>
+</body>
+</html>
