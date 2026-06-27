@@ -1,19 +1,24 @@
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script>
-Pi.init({ version: "2.0", sandbox: true });
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pi Login Page</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+    <h1>به سایت من خوش آمدید</h1>
+    <button id="pi-login-btn">Login with Pi</button>
 
-async function loginPi() {
-  try {
-    const scopes = ['username', 'payments'];
-    const auth = await Pi.authenticate(scopes, function(payment) {
-      console.log(payment);
-    });
-    
-    console.log("User:", auth.user);
-    alert("Welcome " + auth.user.username);
+    <script>
+        Pi.init({ version: "2.0", sandbox: true });
 
-  } catch (err) {
-    console.error(err);
-  }
-}
-</script>
+        document.getElementById('pi-login-btn').addEventListener('click', async () => {
+            try {
+                const auth = await Pi.authenticate(['username'], (payment) => {});
+                alert("خوش آمدید: " + auth.user.username);
+            } catch (err) {
+                alert("خطا در ورود: " + err);
+            }
+        });
+    </script>
+</body>
+</html>
