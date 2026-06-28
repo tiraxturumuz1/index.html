@@ -3,130 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Dao</title>
+    <title>Pi Decentralized Government</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f7f6; margin: 0; }
-        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; }
+        /* استایل‌های ظاهری برای زیبایی بیشتر */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            padding-top: 50px; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+        }
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            display: inline-block; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            max-width: 90%; 
+            min-width: 300px;
+        }
         h1 { color: #673ab7; font-size: 24px; margin-bottom: 10px; }
         p { color: #666; }
-        #status { margin-top: 20px; padding: 10px; font-size: 19px; border-radius: 5px; }
-        .success { color: green; }
-        .error { color: red; }
+        
+        #status { 
+            margin-top: 20px; 
+            padding: 10px; 
+            font-size: 17px; 
+            border-radius: 5px; 
+        }
+        .success { color: #2e7d32; background: #e8f5e9; }
+        .error { color: #c62828; background: #ffebee; }
+        
         .login-btn {
             background-color: #673ab7;
             color: white;
             border: none;
             padding: 15px 30px;
-            font-size: 26px;
+            font-size: 16px;
             border-radius: 30px;
             cursor: pointer;
             margin-top: 25px;
+            display: none; /* در ابتدا مخفی است تا SDK لود شود */
+            transition: background 0.3s;
+        }
+        .login-btn:hover { background-color: #512da8; }
+
+        #user-info { 
+            margin-top: 30px; 
+            padding: 20px; 
+            border-top: 1px solid #eee; 
             display: none; 
         }
-        #user-info { margin-top: 30px; padding: 20px; border-top: 1px solid #eee; display: none; }
-        .username { font-size: 44px; font-weight: bold; color: #333; }
-        .logout-btn { margin-top: 15px; background: none; border: 1px solid #ff5252; color: #ff5252; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .username { font-size: 29px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .logout-btn { 
+            margin-top: 15px; 
+            background: none; 
+            border: 1px solid #ff5252; 
+            color: #ff5252; 
+            padding: 5px 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Welcome.</h1>
-        <p>Please log in to access the platform.</p>
+        <h1>Pi DAO</h1>
+        <p id="welcome to pi Dao">Please log in to access the platform.</p>
 
+        <!-- دکمه ورود -->
         <button id="login-button" class="login-btn">Login with Pi</button>
 
+        <!-- بخش نمایش اطلاعات کاربر پس از ورود -->
         <div id="user-info">
             <p>Welcome back,</p>
             <div class="username" id="username-display"></div>
             <button class="logout-btn" onclick="location.reload()">Logout</button>
         </div>
 
+        <!-- نمایش وضعیت عملیات (Initializing, Success, Error) -->
         <div id="status">Initializing SDK...</div>
     </div>
 
-    <!-- ۱. ابتدا لود کردن اسکریپت اصلی -->
+    <!-- ۱. لود کردن اسکریپت Pi SDK (باید قبل از کدهای اصلی باشد) -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
     <script>
-    const statusDiv = document.getElementById('status');
-    const loginButton = document.getElementById('login-button');
-    const userInfoDiv = document.getElementById('user-info');
-    const usernameDisplay = document.getElementById('username-display');
+        // انتخاب المان‌ها از DOM
+        const statusDiv = document.getElementById('status');
+        const loginButton = document.getElementById('login-button');
+        const userInfoDiv = document.getElementById('user-info');
+        const usernameDisplay = document.getElementById('username-display');
+        const welcomeText = document.getElementById('welcome-text');
 
-    function updateStatus(msg, type) {
-        statusDiv.textContent = msg;
-        statusDiv.className = type; 
-    }
-
-    window.onload = function() {
-        console.log("Page fully loaded. Checking for redirect...");
-
-        if (typeof Pi === 'undefined') {
-            updateStatus("Error: Pi SDK not found.", "error");
-            return;
+        // تابع کمکی برای آپدیت پیام وضعیت
+        function updateStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.className = type; 
         }
 
-        // ۱. ابتدا مقداردهی اولیه
-        Pi.init({ 
-            version: "2.0", 
-            sandbox: true, 
-            appId: "pidao-pi-2uk8",
-            clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
-            redirectUri: "https://tiraxturumuz1.github.io/index.html" 
-        }).then(() => {
-            console.log("Pi SDK Initialized.");
-            updateStatus("SDK Connected!", "success");
-            loginButton.style.display = "inline-block";
+        // ۲. شروع عملیات پس از لود کامل صفحه
+        window.onload = function() {
+            console.log("Page loaded. Starting Pi initialization...");
 
-            // ۲. نکته کلیدی: بررسی اینکه آیا کاربر از صفحه پای بازگشته است یا خیر
-            // اگر در URL پارامترهای مربوط به احراز هویت باشد، یعنی کاربر اجازه داده است
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('code') || urlParams.has('token')) {
-                console.log("Redirect detected! Finalizing authentication...");
-                // اگر بازگشت انجام شده، تابع احراز هویت را دوباره صدا می‌زنیم تا اطلاعات را دریافت کنیم
-                finishAuthentication();
-            }
-
-        }).catch((err) => {
-            console.error("Initialization error:", err);
-            updateStatus("Init Error: " + err.message, "error");
-        });
-    };
-
-    // تابع برای مدیریت نهایی احراز هویت
-    function finishAuthentication() {
-        updateStatus("Completing authentication...", "");
-        
-        // در نسخه 2.0، وقتی بازگشت انجام می‌شود، Pi.authenticate باید اطلاعات را از URL بردارد
-        Pi.authenticate(['username'], function(err, auth) {
-            if (err) {
-                console.error("Auth Error:", err);
-                updateStatus("Auth Error: " + err.message, "error");
+            // بررسی وجود SDK
+            if (typeof Pi === 'undefined') {
+                updateStatus("Error: Pi SDK not found. Check internet connection.", "error");
                 return;
             }
+
+            // ۳. مقداردهی اولیه SDK
+            Pi.init({ 
+                version: "2.0", 
+                sandbox: true, // حتماً چک کنید در پنل پای هم Sandbox فعال باشد
+                appId: "pidao-pi-2uk8",
+                clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
+                redirectUri: "https://tiraxturumuz1.github.io/index.html" 
+            }).then(() => {
+                console.log("Pi SDK Initialized successfully.");
+                updateStatus("SDK Connected!", "success");
+                
+                // نمایش دکمه ورود
+                loginButton.style.display = "inline-block";
+
+                // ۴. نکته حیاتی: بررسی اینکه آیا کاربر از صفحه تایید بازگشته است؟
+                // اگر در URL پارامتر code وجود داشته باشد، یعنی کاربر اجازه داده است.
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('code')) {
+                    console.log("Redirect detected! Completing login...");
+                    finishAuthentication();
+                }
+
+            }).catch((err) => {
+                console.error("Initialization error:", err);
+                updateStatus("Init Error: " + err.message, "error");
+            });
+        };
+
+        // تابع اصلی برای انجام فرآیند احراز هویت
+        function finishAuthentication() {
+            updateStatus("Authenticating...", "");
             
-            if (auth && auth.user) {
-                showUser(auth.user);
-            } else {
-                updateStatus("No user data received.", "error");
-            }
+            // فراخوانی متد احراز هویت نسخه 2.0
+            Pi.authenticate(['username'], function(err, auth) {
+                if (err) {
+                    console.error("Authentication Error:", err);
+                    updateStatus("Auth Error: " + err.message, "error");
+                    return;
+                }
+                
+                if (auth && auth.user) {
+                    showUser(auth.user);
+                } else {
+                    updateStatus("No user data received.", "error");
+                }
+            });
+        }
+
+        // مدیریت کلیک دکمه ورود (برای اولین بار)
+        loginButton.addEventListener('click', function() {
+            finishAuthentication();
         });
-    }
 
-    // مدیریت کلیک دکمه ورود (برای شروع اولین بار)
-    loginButton.addEventListener('click', function() {
-        updateStatus("Authenticating...", "");
-        finishAuthentication();
-    });
-
-    function showUser(user) {
-        console.log("User logged in:", user);
-        loginButton.style.display = "none";
-        statusDiv.style.display = "none";
-        userInfoDiv.style.display = "block";
-        usernameDisplay.textContent = "@" + user.username;
-    }
-</script>
+        // نمایش اطلاعات کاربر در صفحه
+        function showUser(user) {
+            console.log("User data received:", user);
+            loginButton.style.display = "none";
+            statusDiv.style.display = "none";
+            welcomeText.style.display = "none";
+            userInfoDiv.style.display = "block";
+            usernameDisplay.textContent = "@" + user.username;
+        }
+    </script>
 </body>
 </html>
