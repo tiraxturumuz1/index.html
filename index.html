@@ -86,23 +86,27 @@
             });
         };
 
-        // ۴. مدیریت صحیح کلیک دکمه ورود
+        // ۴. مدیریت صحیح کلیک دکمه ورود - استفاده از Promise
         loginButton.addEventListener('click', function() {
             updateStatus("Authenticating...", "");
-            
-            // در نسخه 2.0 بهتر است اسکوپ‌ها را به صورت آرایه بفرستید
-            Pi.authenticate(['username'], function(err, auth) {
-                if (err) {
-                    console.error("Auth Error:", err);
-                    updateStatus("Auth Error: " + err.message, "error");
-                    return;
-                }
-                
+
+            // فراخوانی authenticate با دو آرگومان: اسکوپ‌ها و callback برای پرداخت‌های ناقص
+            // سپس then/catch برای دریافت نتیجه
+            Pi.authenticate(['username'], function(payment) {
+                // این callback فقط در صورت وجود پرداخت ناقص اجرا می‌شود
+                console.log('Incomplete payment found:', payment);
+            }).then(function(auth) {
+                // موفقیت: auth شامل user و accessToken است
+                console.log('Auth result:', auth);
                 if (auth && auth.user) {
                     showUser(auth.user);
                 } else {
                     updateStatus("No user data received.", "error");
                 }
+            }).catch(function(err) {
+                // خطا یا کنسل شدن توسط کاربر
+                console.error("Auth Error:", err);
+                updateStatus("Auth Error: " + (err.message || 'User cancelled'), "error");
             });
         });
 
