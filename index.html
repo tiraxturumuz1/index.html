@@ -52,7 +52,7 @@
         <div id="user-info">
             <p>Welcome back,</p>
             <div class="username" id="username-display"></div>
-            <button id="pay-button" class="pay-btn">Pay 1 Pi (Test)</button>
+            <button id="pay-button" class="pay-btn">Pay 0.0001 Pi (Test)</button>
             <div id="payment-status"></div>
             <button class="logout-btn" onclick="location.reload()">Logout</button>
         </div>
@@ -77,13 +77,13 @@
 
         window.onload = function() {
             if (typeof Pi === 'undefined') {
-                updateStatus("Error: Pi SDK not found. Check internet or URL.", "error");
+                updateStatus("Error: Pi SDK not found.", "error");
                 return;
             }
 
             Pi.init({ 
                 version: "2.0", 
-                sandbox: true, // برای تست با Sandbox حتما true باشد
+                sandbox: true, 
                 appId: "pidao-pi-2uk8",
                 clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
                 redirectUri: "https://tiraxturumuz1.github.io/index.html" 
@@ -119,34 +119,30 @@
             payButton.style.display = "inline-block";
         }
 
-        // ------------------- بخش پرداخت -------------------
+        // ------------------- پرداخت با مقدار 0.0001 Pi -------------------
         payButton.addEventListener('click', function() {
-            // غیرفعال کردن دکمه برای جلوگیری از کلیک مجدد
             payButton.disabled = true;
             paymentStatus.textContent = "Creating payment...";
             paymentStatus.className = "";
 
-            // فراخوانی createPayment
-            Pi.createPayment({
-                amount: 1,              // مبلغ به پی
-                memo: "Test payment for Pi Dao", // توضیح
-                metadata: { orderId: "12345" } // اطلاعات دلخواه (اختیاری)
+            // فراخوانی createPayment و ذخیره Promise برای مدیریت خطا
+            const paymentPromise = Pi.createPayment({
+                amount: 0.0001,                     // <-- مقدار تست تغییر کرد
+                memo: "Test payment for Pi Dao",
+                metadata: { orderId: "12345" }
             }, {
-                // callback برای تأیید سمت سرور (Server-Side Approval)
+                // آماده شدن برای تأیید سمت سرور
                 onReadyForServerApproval: function(paymentId) {
                     console.log("Payment ready for server approval:", paymentId);
-                    // در این مرحله باید paymentId را به سرور خود بفرستید
-                    // و در سرور با Pi API عملیات approve را انجام دهید.
-                    // در Sandbox می‌توانید از Developer Portal دستی approve کنید.
                     paymentStatus.textContent = "Payment created. Waiting for approval...";
+                    // در Sandbox: به Developer Portal بروید و دستی Approve کنید.
                 },
-                // callback برای تکمیل سمت سرور (Server-Side Completion)
+                // آماده شدن برای تکمیل سمت سرور
                 onReadyForServerCompletion: function(paymentId, txid) {
                     console.log("Payment ready for server completion:", paymentId, txid);
-                    // اینجا باید paymentId را به سرور بفرستید تا complete کند.
                     paymentStatus.textContent = "Payment is being completed...";
                 },
-                // پرداخت توسط کاربر کنسل شود
+                // کنسل شدن توسط کاربر
                 onCancel: function(paymentId) {
                     console.log("Payment cancelled:", paymentId);
                     paymentStatus.textContent = "Payment cancelled by user.";
@@ -158,6 +154,18 @@
                     paymentStatus.textContent = "Payment error: " + error.message;
                     payButton.disabled = false;
                 }
+            });
+
+            // مدیریت کلی Promise برای اطمینان از مشاهده خطاها / تکمیل نهایی
+            paymentPromise.then(function(result) {
+                console.log("Payment completed (Promise resolved):", result);
+                // این resolve زمانی اتفاق می‌افتد که پرداخت توسط سرور complete شود
+                paymentStatus.textContent = "Payment successful!";
+                payButton.disabled = false;
+            }).catch(function(err) {
+                console.error("Payment Promise error:", err);
+                paymentStatus.textContent = "Payment failed: " + (err.message || err);
+                payButton.disabled = false;
             });
         });
     </script>
