@@ -1,0 +1,40 @@
+<button id="payBtn">Pay 1 Pi</button>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+Pi.init({
+  version: "2.0",
+  sandbox: true,
+  appId: "pidao-pi-2uk8",
+  clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
+  redirectUri: "https://tiraxturumuz1.github.io/index.html"
+});
+
+document.getElementById("payBtn").onclick = () => {
+  const paymentData = {
+    amount: 1,
+    memo: "Test payment",
+    metadata: { orderId: "123" }
+  };
+
+  const callbacks = {
+    onReadyForServerApproval: async (paymentId) => {
+      await fetch("https://YOUR-BACKEND-DOMAIN/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId })
+      });
+    },
+    onReadyForServerCompletion: async (paymentId, txid) => {
+      await fetch("https://YOUR-BACKEND-DOMAIN/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, txid })
+      });
+    },
+    onCancel: (paymentId) => console.log("cancelled", paymentId),
+    onError: (error, payment) => console.log(error, payment)
+  };
+
+  Pi.createPayment(paymentData, callbacks);
+};
+</script>
