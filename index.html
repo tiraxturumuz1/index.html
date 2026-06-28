@@ -98,48 +98,27 @@
         const welcomeText = document.getElementById('welcome-text');
 
         // تابع کمکی برای آپدیت پیام وضعیت
-        function updateStatus(msg, type) {
-            statusDiv.textContent = msg;
-            statusDiv.className = type; 
+        function finishAuthentication() {
+    updateStatus("Authenticating...", "");
+    console.log("Attempting to authenticate...");
+
+    // استفاده از متد ساده‌تر برای تست
+    Pi.authenticate(['username'], function(err, auth) {
+        if (err) {
+            console.error("Detailed Auth Error:", err);
+            // این قسمت بسیار مهم است: نمایش جزئیات خطا در صفحه
+            updateStatus("Auth Error: " + (err.message || JSON.stringify(err)), "error");
+            return;
         }
-
-        // ۲. شروع عملیات پس از لود کامل صفحه
-        window.onload = function() {
-            console.log("Page loaded. Starting Pi initialization...");
-
-            // بررسی وجود SDK
-            if (typeof Pi === 'undefined') {
-                updateStatus("Error: Pi SDK not found. Check internet connection.", "error");
-                return;
-            }
-
-            // ۳. مقداردهی اولیه SDK
-            Pi.init({ 
-                version: "2.0", 
-                sandbox: true, // حتماً چک کنید در پنل پای هم Sandbox فعال باشد
-                appId: "pidao-pi-2uk8",
-                clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
-                redirectUri: "https://tiraxturumuz1.github.io/index.html" 
-            }).then(() => {
-                console.log("Pi SDK Initialized successfully.");
-                updateStatus("SDK Connected!", "success");
-                
-                // نمایش دکمه ورود
-                loginButton.style.display = "inline-block";
-
-                // ۴. نکته حیاتی: بررسی اینکه آیا کاربر از صفحه تایید بازگشته است؟
-                // اگر در URL پارامتر code وجود داشته باشد، یعنی کاربر اجازه داده است.
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.has('code')) {
-                    console.log("Redirect detected! Completing login...");
-                    finishAuthentication();
-                }
-
-            }).catch((err) => {
-                console.error("Initialization error:", err);
-                updateStatus("Init Error: " + err.message, "error");
-            });
-        };
+        
+        console.log("Auth Success object:", auth);
+        if (auth && auth.user) {
+            showUser(auth.user);
+        } else {
+            updateStatus("Auth successful but no user data found.", "error");
+        }
+    });
+}
 
         // تابع اصلی برای انجام فرآیند احراز هویت
         function finishAuthentication() {
