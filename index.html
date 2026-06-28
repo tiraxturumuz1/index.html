@@ -2,94 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi DAO Debug</title>
+    <title>Pi Final Test</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f7f6; }
-        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 80%; }
-        #status { margin-top: 20px; padding: 15px; font-size: 14px; border-radius: 5px; border: 1px solid #ccc; }
-        .error { color: #c62828; background: #ffebee; border-color: #ef9a9a !important; }
-        .success { color: #2e7d32; background: #e8f5e9; }
-        .login-btn { background-color: #673ab7; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 30px; cursor: pointer; display: none; margin-top: 20px; }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        #status { padding: 15px; margin: 20px; border: 1px solid #ccc; background: #f9f9f9; min-height: 40px; }
+        .error { color: red; border-color: red !important; background: #fee !important; }
+        .success { color: green; border-color: green !important; background: #efe !important; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Pi DAO Debugger</h1>
-        <p>Check the status box below for error details.</p>
+    <h1>Pi Auth Tester</h1>
+    <div id="status">Initializing...</div>
+    <button id="login-button" style="display:none;">LOGIN WITH PI</button>
 
-        <button id="login-button" class="login-btn">Login with Pi</button>
-        <div id="user-info" style="display:none;">
-            <p>Welcome, <span id="username-display"></span></p>
-        </div>
-
-        <div id="status">Waiting for SDK script...</div>
-    </div>
-
-    <!-- لود کردن اسکریپت -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
     <script>
-        const statusDiv = document.getElementById('status');
-        const loginButton = document.getElementById('login-button');
-        const usernameDisplay = document.getElementById('username-display');
-        const userInfoDiv = document.getElementById('user-info');
+        const statusEl = document.getElementById('status');
+        const btn = document.getElementById('login-button');
 
-        function updateStatus(msg, type) {
-            statusDiv.textContent = msg;
-            statusDiv.className = type;
-            console.log("Status:", msg);
+        function updateStatus(msg, isError = false) {
+            statusEl.innerText = msg;
+            statusEl.className = isError ? "error" : "success";
+            console.log(msg);
         }
 
         window.onload = function() {
-            // مرحله ۱: چک کردن اینکه آیا اسکریپت لود شده یا نه
-            if (typeof Pi === 'undefined') {
-                updateStatus("CRITICAL ERROR: Pi SDK script failed to load. Check your internet or the <script> tag.", "error");
-                return;
-            }
-            updateStatus("SDK Script found. Initializing...", "");
-
-            // مرحله ۲: مقداردهی اولیه با مدیریت خطای بسیار دقیق
+            // تست مرحله اول: Init
             Pi.init({ 
                 version: "2.0", 
-                sandbox: true, // اگر در پنل Mainnet هستید، این را false کنید
+                sandbox: true, // <--- اگر این کار نکرد، حتماً در کد بعدی آن را false کنید
                 appId: "pidao-pi-2uk8",
                 clientId: "c_1Hj75SyO_wbM4BUaxgVzuOmplNnrDj_2pWxDUkD8Q",
                 redirectUri: "https://tiraxturumuz1.github.io/index.html" 
             }).then(() => {
-                updateStatus("Initialization Successful!", "success");
-                loginButton.style.display = "inline-block";
-
-                // بررسی بازگشت از احراز هویت
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.has('code')) {
-                    updateStatus("Redirect detected. Authenticating...", "");
-                    finishAuthentication();
-                }
+                updateStatus("Step 1: SDK Initialized Successfully!");
+                btn.style.display = "inline-block";
             }).catch((err) => {
-                // این بخش بسیار مهم است. خطا را دقیقاً نمایش می‌دهد.
-                console.error("Pi.init failed:", err);
-                updateStatus("INIT ERROR: " + JSON.stringify(err), "error");
+                updateStatus("Step 1 ERROR: " + JSON.stringify(err), true);
             });
         };
 
-        function finishAuthentication() {
+        btn.onclick = function() {
+            updateStatus("Step 2: Attempting to authenticate...");
+            
+            // اجرای احراز هویت
             Pi.authenticate(['username'], function(err, auth) {
                 if (err) {
-                    updateStatus("AUTH ERROR: " + JSON.stringify(err), "error");
-                    return;
-                }
-                if (auth && auth.user) {
-                    loginButton.style.display = "none";
-                    statusDiv.style.display = "none";
-                    userInfoDiv.style.display = "block";
-                    usernameDisplay.textContent = "@" + auth.user.username;
+                    // اگر اینجا خطا داد، یعنی مشکل از تطابق Sandbox یا Redirect URI است
+                    updateStatus("Step 2 ERROR (Auth Failed): " + JSON.stringify(err), true);
+                    console.error("Auth Error details:", err);
+                } else if (auth && auth.user) {
+                    updateStatus("Step 3: Success! Welcome " + auth.user.username, false);
+                    btn.style.display = "none";
+                } else {
+                    updateStatus("Step 2 ERROR: No user data returned.", true);
                 }
             });
-        }
-
-        loginButton.addEventListener('click', finishAuthentication);
+        };
     </script>
 </body>
 </html>
