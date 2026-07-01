@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Dao - Payment Test</title>
+    <title>Pi Dao</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding-top: 50px; background-color: #f4f7f6; margin: 0; }
-        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; width: 400px; }
+        .container { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; }
         h1 { color: #673ab7; font-size: 24px; margin-bottom: 10px; }
         p { color: #666; }
-        #status { margin-top: 20px; padding: 15px; font-size: 14px; border-radius: 5px; background: #eee; min-height: 20px; }
-        .success { color: #2e7d32; background: #e8f5e9 !important; border: 1px solid #c8e6c9; }
-        .error { color: #c62828; background: #ffebee !important; border: 1px solid #ffcdd2; }
-        
-        .action-btn {
+        #status { margin-top: 20px; padding: 10px; font-size: 14px; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .login-btn {
             background-color: #673ab7;
             color: white;
             border: none;
@@ -23,63 +22,62 @@
             cursor: pointer;
             margin-top: 25px;
             display: none; 
-            width: 100%;
-            transition: background 0.3s;
         }
-        .action-btn:hover { background-color: #512da8; }
-        
-        #payment-button { background-color: #00c853; display: none; }
-        #payment-button:hover { background-color: #00a040; }
-
         #user-info { margin-top: 30px; padding: 20px; border-top: 1px solid #eee; display: none; }
         .username { font-size: 22px; font-weight: bold; color: #333; }
         .logout-btn { margin-top: 15px; background: none; border: 1px solid #ff5252; color: #ff5252; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .pay-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 25px;
+            display: none;
+        }
+        .pay-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+        #payment-status { margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1 id="main-title">Pi Dao</h1>
-        <p id="main-desc">Please log in to access the platform.</p>
+        <h1>Welcome.</h1>
+        <p>Please log in to access the platform.</p>
 
-        <!-- دکمه لاگین -->
-        <button id="login-button" class="action-btn" style="display: inline-block;">Login with Pi</button>
-        
-        <!-- دکمه پرداخت (بعد از لاگین ظاهر می‌شود) -->
-        <button id="payment-button" class="action-btn">Pay 1.0 Pi</button>
+        <button id="login-button" class="login-btn">Login with Pi</button>
 
-        <!-- اطلاعات کاربر -->
         <div id="user-info">
             <p>Welcome back,</p>
             <div class="username" id="username-display"></div>
+            <button id="pay-button" class="pay-btn">Pay 0.0001 Pi (Test)</button>
+            <div id="payment-status"></div>
             <button class="logout-btn" onclick="location.reload()">Logout</button>
         </div>
 
         <div id="status">Initializing SDK...</div>
     </div>
 
-    <!-- ۱. لود کردن اسکریپت اصلی -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
     <script>
         const statusDiv = document.getElementById('status');
         const loginButton = document.getElementById('login-button');
-        const paymentButton = document.getElementById('payment-button');
         const userInfoDiv = document.getElementById('user-info');
         const usernameDisplay = document.getElementById('username-display');
-        const mainTitle = document.getElementById('main-title');
-        const mainDesc = document.getElementById('main-desc');
+        const payButton = document.getElementById('pay-button');
+        const paymentStatus = document.getElementById('payment-status');
 
         function updateStatus(msg, type) {
             statusDiv.textContent = msg;
             statusDiv.className = type; 
-            console.log(`[Status]: ${msg} (${type})`);
         }
 
-        // ۲. مقداردهی اولیه SDK
         window.onload = function() {
             if (typeof Pi === 'undefined') {
-                updateStatus("Error: Pi SDK not found. Make sure you are in Pi Browser.", "error");
+                updateStatus("Error: Pi SDK not found. Are you in Pi Browser?", "error");
                 return;
             }
 
@@ -97,16 +95,11 @@
             });
         };
 
-        // ۳. مدیریت احراز هویت (Login)
         loginButton.addEventListener('click', function() {
             updateStatus("Authenticating...", "");
-            
+
             Pi.authenticate(['username'], function(payment) {
-                // مدیریت پرداخت‌های ناقص (Incomplete Payments)
-                if (payment) {
-                    updateStatus("Resuming previous payment...", "");
-                    console.log('Incomplete payment found:', payment);
-                }
+                console.log('Incomplete payment found:', payment);
             }).then(function(auth) {
                 if (auth && auth.user) {
                     showUser(auth.user);
@@ -119,47 +112,55 @@
         });
 
         function showUser(user) {
-            // تغییر رابط کاربری پس از لاگین
             loginButton.style.display = "none";
-            mainTitle.textContent = "Dashboard";
-            mainDesc.textContent = "You are logged in. Ready to purchase?";
-            
+            statusDiv.style.display = "none";
             userInfoDiv.style.display = "block";
             usernameDisplay.textContent = "@" + user.username;
-            
-            // نمایش دکمه پرداخت
-            paymentButton.style.display = "inline-block";
-            updateStatus("Logged in successfully!", "success");
+            payButton.style.display = "inline-block";
         }
 
-        // ۴. مدیریت فرآیند پرداخت (Payment)
-        paymentButton.addEventListener('click', function() {
-            updateStatus("Preparing for a payment...", "");
-            
-            // غیرفعال کردن دکمه برای جلوگیری از کلیک‌های تکراری
-            paymentButton.disabled = true;
-            paymentButton.style.opacity = "0.5";
+        // ------------------- پرداخت ساده با Promise و بدون callback -------------------
+        payButton.addEventListener('click', function() {
+            payButton.disabled = true;
+            paymentStatus.textContent = "Creating payment...";
+            paymentStatus.className = "";
 
+            // فقط Promise ساده برای عیب‌یابی
             Pi.createPayment({
-                amount: 1.0,
-                memo: "Test purchase for Pi Dao",
-                metadata: { orderId: "order_12345" }
-            }, function(payment) {
-                // این بخش برای مدیریت تراکنش‌های نیمه‌تمام است
-                console.log('Incomplete payment found during createPayment:', payment);
-            }).then(function(result) {
-                // این بخش وقتی اجرا می‌شود که درخواست با موفقیت به درگاه ارسال شده باشد
-                console.log("Payment initiated successfully:", result);
-                updateStatus("Please check your Pi Wallet to confirm.", "success");
+                amount: 0.0001,
+                memo: "Test payment - debugging",
+                metadata: { debug: true }
+            }, {
+                // callbackهای خالی برای جلوگیری از خطای undefined
+                onReadyForServerApproval: function(id) {
+                    console.log("onReadyForServerApproval", id);
+                    paymentStatus.textContent = "Payment created. Approval needed.";
+                },
+                onReadyForServerCompletion: function(id, txid) {
+                    console.log("onReadyForServerCompletion", id, txid);
+                    paymentStatus.textContent = "Payment completed by server.";
+                    payButton.disabled = false;
+                },
+                onCancel: function(id) {
+                    console.log("onCancel", id);
+                    paymentStatus.textContent = "Cancelled.";
+                    payButton.disabled = false;
+                },
+                onError: function(err, payment) {
+                    console.error("onError", err, payment);
+                    paymentStatus.textContent = "Error: " + err.message;
+                    payButton.disabled = false;
+                }
+            }).then(function(res) {
+                console.log("Payment Promise resolved:", res);
+                paymentStatus.textContent = "Payment successful (Promise).";
+                payButton.disabled = false;
             }).catch(function(err) {
-                // مدیریت خطاها (مانند کنسل شدن توسط کاربر)
-                console.error("Payment Error:", err);
-                paymentButton.disabled = false;
-                paymentButton.style.opacity = "1";
-                updateStatus("Payment Error: " + (err.message || 'Transaction failed'), "error");
+                console.error("Payment Promise rejected:", err);
+                paymentStatus.textContent = "Payment failed: " + (err.message || JSON.stringify(err));
+                payButton.disabled = false;
             });
         });
-
     </script>
 </body>
 </html>
